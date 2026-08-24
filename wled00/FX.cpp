@@ -2383,11 +2383,16 @@ void mode_meteor() {
   byte* trail = SEGENV.data;
 
   const unsigned meteorSize = 1 + SEGLEN / 20; // 5%
+  // custom3 is not exposed as a slider; it doubles as a one-time init flag (default c3=1 in metadata).
+  // Legacy configs predating the "# of Meteors" control may carry a leftover custom1 value, which would
+  // render an unexpected meteor count. If custom3 is not 1, treat the config as legacy: reset custom1 to
+  // 0 (single meteor) and mark custom3=1 so this migration runs only once.
   if (SEGMENT.custom3 != 1) {
     SEGMENT.custom1 = 0;
     SEGMENT.custom3 = 1;
   }
-  const unsigned numMeteors = 1 + (SEGMENT.custom1 >> 5); // 1..8 meteors
+  // clamp to SEGLEN so meteors get distinct start indices on very short segments (avoids duplicates)
+  const unsigned numMeteors = min((unsigned)(1 + (SEGMENT.custom1 >> 5)), (unsigned)SEGLEN); // 1..8 meteors
   uint16_t meteorstart;
   if(meteorSmooth) meteorstart = map((SEGENV.step >> 6 & 0xFF), 0, 255, 0, SEGLEN -1);
   else {
